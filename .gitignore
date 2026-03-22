@@ -22,3 +22,8 @@ packages/database/prisma/*.db
 # Existing local services
 openwa-bot/quotations
 openwa-bot/bot.sqlite
+
+.vercel
+
+# Local Netlify folder
+.netlify
