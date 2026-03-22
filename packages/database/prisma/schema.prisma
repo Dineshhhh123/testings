@@ -1,0 +1,345 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum ClientStatus {
+  ACTIVE
+  PAUSED
+  ONBOARDING
+}
+
+enum MemberRole {
+  OWNER
+  ADMIN
+  AGENT
+  VIEWER
+}
+
+enum WhatsappStatus {
+  DISCONNECTED
+  WAITING_QR
+  CONNECTING
+  CONNECTED
+  ERROR
+}
+
+enum SourceType {
+  PDF
+  DOCX
+  XLSX
+  CSV
+  WEBSITE
+  TEXT
+}
+
+enum SourceStatus {
+  PENDING
+  PROCESSING
+  READY
+  FAILED
+}
+
+enum LeadStatus {
+  NEW
+  QUALIFYING
+  QUOTED
+  WON
+  LOST
+  BLOCKED
+}
+
+enum MeetingStatus {
+  REQUESTED
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum QuotationStatus {
+  DRAFT
+  SENT
+  ACCEPTED
+  REJECTED
+}
+
+model DashboardUser {
+  id           String         @id @default(cuid())
+  email        String         @unique
+  passwordHash String?
+  fullName     String
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+  memberships  ClientMember[]
+}
+
+model Client {
+  id                    String                @id @default(cuid())
+  name                  String
+  slug                  String                @unique
+  status                ClientStatus          @default(ONBOARDING)
+  industryType          String?
+  businessDescription   String?
+  websiteUrl            String?
+  createdAt             DateTime              @default(now())
+  updatedAt             DateTime              @updatedAt
+  members               ClientMember[]
+  businessProfile       BusinessProfile?
+  whatsappInstances     WhatsappInstance[]
+  leadFieldDefinitions  LeadFieldDefinition[]
+  leads                 Lead[]
+  conversations         Conversation[]
+  knowledgeSources      KnowledgeSource[]
+  knowledgeChunks       KnowledgeChunk[]
+  pricingSheets         PricingSheet[]
+  pricingItems          PricingItem[]
+  quotationTemplates    QuotationTemplate[]
+  quotations            Quotation[]
+  meetings              Meeting[]
+  blockedNumbers        BlockedNumber[]
+}
+
+model ClientMember {
+  id        String        @id @default(cuid())
+  clientId   String
+  userId     String
+  role       MemberRole   @default(OWNER)
+  createdAt  DateTime     @default(now())
+  client     Client       @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  user       DashboardUser @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, userId])
+}
+
+model BusinessProfile {
+  id                        String   @id @default(cuid())
+  clientId                   String   @unique
+  businessName               String
+  industryType               String?
+  salesPrompt                String?
+  supportPrompt              String?
+  requiredUserDetails        Json?
+  allowedWebsiteUrls         Json?
+  createdAt                  DateTime @default(now())
+  updatedAt                  DateTime @updatedAt
+  client                     Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+}
+
+model WhatsappInstance {
+  id                  String         @id @default(cuid())
+  clientId             String
+  provider             String         @default("evolution-api")
+  instanceName         String         @unique
+  externalInstanceId   String?
+  status               WhatsappStatus @default(DISCONNECTED)
+  qrCode               String?
+  lastConnectedAt      DateTime?
+  lastError            String?
+  metadata             Json?
+  createdAt            DateTime       @default(now())
+  updatedAt            DateTime       @updatedAt
+  client               Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+}
+
+model LeadFieldDefinition {
+  id          String   @id @default(cuid())
+  clientId      String
+  key           String
+  label         String
+  fieldType     String
+  isRequired    Boolean  @default(false)
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  client        Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  leadValues    LeadFieldValue[]
+
+  @@unique([clientId, key])
+}
+
+model Lead {
+  id                String         @id @default(cuid())
+  clientId           String
+  conversationId     String?        @unique
+  displayName        String?
+  phone              String?
+  externalUserJid    String
+  status             LeadStatus     @default(NEW)
+  sourceChannel      String         @default("whatsapp")
+  notes              String?
+  createdAt          DateTime       @default(now())
+  updatedAt          DateTime       @updatedAt
+  client             Client         @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  conversation       Conversation?  @relation(fields: [conversationId], references: [id], onDelete: SetNull)
+  fieldValues        LeadFieldValue[]
+  quotations         Quotation[]
+  meetings           Meeting[]
+
+  @@unique([clientId, externalUserJid])
+}
+
+model LeadFieldValue {
+  id                 String               @id @default(cuid())
+  leadId             String
+  fieldDefinitionId  String
+  value              String
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+  lead               Lead                 @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  fieldDefinition    LeadFieldDefinition  @relation(fields: [fieldDefinitionId], references: [id], onDelete: Cascade)
+
+  @@unique([leadId, fieldDefinitionId])
+}
+
+model Conversation {
+  id                String      @id @default(cuid())
+  clientId           String
+  leadId             String?     @unique
+  channel            String      @default("whatsapp")
+  externalChatId     String
+  state              String      @default("awaiting_name")
+  summary            String?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  client             Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  lead               Lead?       @relation
+  messages           Message[]
+
+  @@unique([clientId, externalChatId])
+}
+
+model Message {
+  id                String       @id @default(cuid())
+  conversationId     String
+  externalMessageId  String?
+  direction          String
+  role               String
+  text               String?
+  rawPayload         Json?
+  sentAt             DateTime?
+  createdAt          DateTime     @default(now())
+  conversation       Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+
+  @@index([conversationId, createdAt])
+}
+
+model KnowledgeSource {
+  id                String        @id @default(cuid())
+  clientId           String
+  type               SourceType
+  title              String
+  filePath           String?
+  url                String?
+  mimeType           String?
+  status             SourceStatus  @default(PENDING)
+  metadata           Json?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  client             Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  chunks             KnowledgeChunk[]
+}
+
+model KnowledgeChunk {
+  id                 String          @id @default(cuid())
+  sourceId           String
+  clientId           String
+  chunkIndex         Int
+  content            String
+  metadata           Json?
+  embedding          Json?
+  createdAt          DateTime        @default(now())
+  source             KnowledgeSource @relation(fields: [sourceId], references: [id], onDelete: Cascade)
+  client             Client          @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([sourceId, chunkIndex])
+}
+
+model PricingSheet {
+  id                String        @id @default(cuid())
+  clientId           String
+  title              String
+  filePath           String?
+  status             SourceStatus  @default(PENDING)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  client             Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  items              PricingItem[]
+}
+
+model PricingItem {
+  id                String       @id @default(cuid())
+  pricingSheetId     String
+  clientId           String
+  category           String
+  product            String
+  variant            String?
+  packQuantity       Int?
+  rate               Decimal?    @db.Decimal(12, 2)
+  discount           Decimal?    @db.Decimal(5, 2)
+  currency           String      @default("INR")
+
+  metadata           Json?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  pricingSheet       PricingSheet @relation(fields: [pricingSheetId], references: [id], onDelete: Cascade)
+  client             Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+}
+
+model BlockedNumber {
+  id        String   @id @default(cuid())
+  clientId  String
+  phone     String
+  reason    String?
+  createdAt DateTime @default(now())
+  client    Client   @relation(fields: [clientId], references: [id], onDelete: Cascade)
+
+  @@unique([clientId, phone])
+}
+
+model QuotationTemplate {
+  id                 String      @id @default(cuid())
+  clientId           String
+  title              String
+  filePath           String
+  mimeType           String?
+  placeholderMap     Json?
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+  client             Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  quotations         Quotation[]
+}
+
+model Quotation {
+  id                  String            @id @default(cuid())
+  clientId            String
+  leadId              String
+  quotationTemplateId String?
+  status              QuotationStatus   @default(DRAFT)
+  summary             Json
+  pdfPath             String?
+  sentAt              DateTime?
+  createdAt           DateTime          @default(now())
+  updatedAt           DateTime          @updatedAt
+  client              Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  lead                Lead              @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  quotationTemplate   QuotationTemplate? @relation(fields: [quotationTemplateId], references: [id], onDelete: SetNull)
+}
+
+model Meeting {
+  id                 String        @id @default(cuid())
+  clientId           String
+  leadId             String
+  scheduledDate      String
+  scheduledTime      String?
+  scheduledAtText    String?
+  status             MeetingStatus @default(REQUESTED)
+  notes              String?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  client             Client        @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  lead               Lead          @relation(fields: [leadId], references: [id], onDelete: Cascade)
+}

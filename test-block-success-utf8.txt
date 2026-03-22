@@ -1,0 +1,45 @@
+﻿Testing block contact...
+Fetching http://localhost:8080/chat/updateBlockStatus/client-dinesh-primary
+node.exe : Failure: 
+Error: Evolution API 
+POST /chat/updateBlockS
+tatus/client-dinesh-pri
+mary failed (500): 
+["Error blocking 
+user","Error: 
+bad-request"]
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: (Failure: Erro   
+ r:...: bad-request    
+"]:String) [], Rem    
+oteException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+    at 
+evolutionRequest (C:\Us
+ers\Doodle-Admin\Downlo
+ads\Telegram Desktop\te
+sting\testing\test-evol
+ution-block.ts:25:11)
+    at process.processT
+icksAndRejections (node
+:internal/process/task_
+queues:105:5)
+    at async main (C:\U
+sers\Doodle-Admin\Downl
+oads\Telegram Desktop\t
+esting\testing\test-evo
+lution-block.ts:34:17)

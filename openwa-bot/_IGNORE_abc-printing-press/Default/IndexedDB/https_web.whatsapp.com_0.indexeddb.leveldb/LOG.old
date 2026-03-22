@@ -1,0 +1,4 @@
+2026/03/11-13:21:13.745 ac03 Reusing MANIFEST /Users/blinkdigital/Documents/testing/openwa-bot/_IGNORE_abc-printing-press/Default/IndexedDB/https_web.whatsapp.com_0.indexeddb.leveldb/MANIFEST-000001
+2026/03/11-13:21:13.745 ac03 Recovering log #380
+2026/03/11-13:21:13.748 ac03 Reusing old log /Users/blinkdigital/Documents/testing/openwa-bot/_IGNORE_abc-printing-press/Default/IndexedDB/https_web.whatsapp.com_0.indexeddb.leveldb/000380.log 
+2026/03/11-13:21:14.857 e703 Manual compaction at level-0 from '\x00y\x00\x00\x00' @ 72057594037927935 : 1 .. '\x00z\x00\x00\x00' @ 0 : 0; will stop at (end)

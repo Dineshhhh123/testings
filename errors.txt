@@ -1,0 +1,123 @@
+﻿src/modules/clients/routes.ts(64,64): error TS2345: Argument of type 'string | string[]' is not assignable to parameter of type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/clients/routes.ts(86,16): error TS2322: Type 'string | string[]' is not assignable to type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/conversations/routes.ts(12,64): error TS2345: Argument of type 'string | string[]' is not assignable to parameter of type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/conversations/routes.ts(16,16): error TS2322: Type 'string | string[]' is not assignable to type 'string | StringFilter<"Conversation">'.
+  Type 'string[]' is not assignable to type 'string | StringFilter<"Conversation">'.
+src/modules/conversations/routes.ts(33,66): error TS2345: Argument of type 'string | string[]' is not assignable to parameter of type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/conversations/routes.ts(37,18): error TS2322: Type 'string | string[]' is not assignable to type 'string | StringFilter<"Conversation">'.
+  Type 'string[]' is not assignable to type 'string | StringFilter<"Conversation">'.
+src/modules/conversations/routes.ts(37,38): error TS2322: Type 'string | string[]' is not assignable to type 'string | StringFilter<"Conversation">'.
+  Type 'string[]' is not assignable to type 'string | StringFilter<"Conversation">'.
+src/modules/knowledge/ingest.ts(4,8): error TS1192: Module '"C:/Users/Doodle-Admin/Downloads/Telegram Desktop/testing/testing/apps/api/node_modules/pdf-parse/dist/pdf-parse/esm/index"' has no default export.
+src/modules/knowledge/routes.ts(47,67): error TS2345: Argument of type 'string | string[]' is not assignable to parameter of type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/knowledge/routes.ts(55,64): error TS2322: Type 'string | string[]' is not assignable to type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/knowledge/routes.ts(65,11): error TS2322: Type 'string | string[]' is not assignable to type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/knowledge/routes.ts(87,64): error TS2345: Argument of type 'string | string[]' is not assignable to parameter of type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/knowledge/routes.ts(95,62): error TS2322: Type 'string | string[]' is not assignable to type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/knowledge/routes.ts(101,39): error TS2345: Argument of type 'string | string[]' is not assignable to parameter of type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/knowledge/routes.ts(110,9): error TS2322: Type 'string | string[]' is not assignable to type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/knowledge/routes.ts(131,64): error TS2345: Argument of type 'string | string[]' is not assignable to parameter of type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/knowledge/routes.ts(147,62): error TS2322: Type 'string | string[]' is not assignable to type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/knowledge/routes.ts(175,41): error TS2345: Argument of type 'string | string[]' is not assignable to parameter of type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/knowledge/routes.ts(184,11): error TS2322: Type 'string | string[]' is not assignable to type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/knowledge/routes.ts(209,64): error TS2345: Argument of type 'string | string[]' is not assignable to parameter of type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/knowledge/routes.ts(212,16): error TS2322: Type 'string | string[]' is not assignable to type 'string | StringFilter<"KnowledgeSource">'.
+  Type 'string[]' is not assignable to type 'string | StringFilter<"KnowledgeSource">'.
+src/modules/knowledge/routes.ts(222,64): error TS2345: Argument of type 'string | string[]' is not assignable to parameter of type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/knowledge/routes.ts(226,16): error TS2322: Type 'string | string[]' is not assignable to type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/knowledge/routes.ts(235,50): error TS2345: Argument of type 'string | string[]' is not assignable to parameter of type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/knowledge/routes.ts(246,64): error TS2345: Argument of type 'string | string[]' is not assignable to parameter of type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/knowledge/routes.ts(250,16): error TS2322: Type 'string | string[]' is not assignable to type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/knowledge/routes.ts(272,55): error TS2322: Type 'string | string[]' is not assignable to type 'string | StringFilter<"KnowledgeChunk">'.
+  Type 'string[]' is not assignable to type 'string | StringFilter<"KnowledgeChunk">'.
+src/modules/knowledge/routes.ts(273,52): error TS2322: Type 'string | string[]' is not assignable to type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/leads/routes.ts(11,64): error TS2345: Argument of type 'string | string[]' is not assignable to parameter of type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/leads/routes.ts(15,16): error TS2322: Type 'string | string[]' is not assignable to type 'string | StringFilter<"Lead">'.
+  Type 'string[]' is not assignable to type 'string | StringFilter<"Lead">'.
+src/modules/leads/routes.ts(26,64): error TS2345: Argument of type 'string | string[]' is not assignable to parameter of type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/leads/routes.ts(30,16): error TS2322: Type 'string | string[]' is not assignable to type 'string | StringFilter<"Lead">'.
+  Type 'string[]' is not assignable to type 'string | StringFilter<"Lead">'.
+src/modules/leads/routes.ts(30,28): error TS2322: Type 'string | string[]' is not assignable to type 'string | StringFilter<"Lead">'.
+  Type 'string[]' is not assignable to type 'string | StringFilter<"Lead">'.
+src/modules/leads/routes.ts(39,16): error TS2322: Type 'string | string[]' is not assignable to type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/leads/routes.ts(49,64): error TS2345: Argument of type 'string | string[]' is not assignable to parameter of type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/leads/routes.ts(53,16): error TS2322: Type 'string | string[]' is not assignable to type 'string | StringFilter<"Lead">'.
+  Type 'string[]' is not assignable to type 'string | StringFilter<"Lead">'.
+src/modules/leads/routes.ts(53,28): error TS2322: Type 'string | string[]' is not assignable to type 'string | StringFilter<"Lead">'.
+  Type 'string[]' is not assignable to type 'string | StringFilter<"Lead">'.
+src/modules/leads/routes.ts(62,16): error TS2322: Type 'string | string[]' is not assignable to type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/leads/routes.ts(72,64): error TS2345: Argument of type 'string | string[]' is not assignable to parameter of type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/leads/routes.ts(76,16): error TS2322: Type 'string | string[]' is not assignable to type 'string | StringFilter<"BlockedNumber">'.
+  Type 'string[]' is not assignable to type 'string | StringFilter<"BlockedNumber">'.
+src/modules/leads/routes.ts(88,64): error TS2345: Argument of type 'string | string[]' is not assignable to parameter of type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/leads/routes.ts(100,11): error TS2322: Type 'string | string[]' is not assignable to type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/leads/routes.ts(108,9): error TS2322: Type 'string | string[]' is not assignable to type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/leads/routes.ts(120,64): error TS2345: Argument of type 'string | string[]' is not assignable to parameter of type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/leads/routes.ts(124,16): error TS2322: Type 'string | string[]' is not assignable to type 'string | StringFilter<"BlockedNumber">'.
+  Type 'string[]' is not assignable to type 'string | StringFilter<"BlockedNumber">'.
+src/modules/leads/routes.ts(124,20): error TS2322: Type 'string | string[]' is not assignable to type 'string | StringFilter<"BlockedNumber">'.
+  Type 'string[]' is not assignable to type 'string | StringFilter<"BlockedNumber">'.
+src/modules/leads/routes.ts(132,50): error TS2322: Type 'string | string[]' is not assignable to type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/quotations/routes.ts(15,64): error TS2345: Argument of type 'string | string[]' is not assignable to parameter of type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/quotations/routes.ts(85,66): error TS2345: Argument of type 'string | string[]' is not assignable to parameter of type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/quotations/routes.ts(89,18): error TS2322: Type 'string | string[]' is not assignable to type 'string | StringFilter<"Quotation">'.
+  Type 'string[]' is not assignable to type 'string | StringFilter<"Quotation">'.
+src/modules/quotations/routes.ts(89,35): error TS2322: Type 'string | string[]' is not assignable to type 'string | StringFilter<"Quotation">'.
+  Type 'string[]' is not assignable to type 'string | StringFilter<"Quotation">'.
+src/modules/quotations/routes.ts(100,75): error TS2345: Argument of type 'string | string[]' is not assignable to parameter of type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/quotations/routes.ts(106,22): error TS2322: Type 'string | string[]' is not assignable to type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/rag/routes.ts(12,64): error TS2345: Argument of type 'string | string[]' is not assignable to parameter of type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/rag/routes.ts(24,9): error TS2322: Type 'string | string[]' is not assignable to type 'string | StringFilter<"KnowledgeChunk">'.
+  Type 'string[]' is not assignable to type 'string | StringFilter<"KnowledgeChunk">'.
+src/modules/whatsapp/routes.ts(20,64): error TS2345: Argument of type 'string | string[]' is not assignable to parameter of type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/whatsapp/routes.ts(23,16): error TS2322: Type 'string | string[]' is not assignable to type 'string | StringFilter<"WhatsappInstance">'.
+  Type 'string[]' is not assignable to type 'string | StringFilter<"WhatsappInstance">'.
+src/modules/whatsapp/routes.ts(34,64): error TS2345: Argument of type 'string | string[]' is not assignable to parameter of type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/whatsapp/routes.ts(42,62): error TS2322: Type 'string | string[]' is not assignable to type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/whatsapp/routes.ts(64,11): error TS2322: Type 'string | string[]' is not assignable to type 'string'.
+  Type 'string[]' is not assignable to type 'string'.
+src/modules/whatsapp/routes.ts(67,11): error TS2322: Type 'string' is not assignable to type 'WhatsappStatus'.
+src/modules/whatsapp/routes.ts(73,11): error TS2322: Type 'string' is not assignable to type 'WhatsappStatus | EnumWhatsappStatusFieldUpdateOperationsInput'.
+src/modules/whatsapp/routes.ts(86,11): error TS2322: Type 'string | string[]' is not assignable to type 'string'.
+  Type 'string[]' is not assignable to type 'string'.

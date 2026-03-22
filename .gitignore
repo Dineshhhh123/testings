@@ -1,0 +1,24 @@
+node_modules
+.next
+dist
+build
+.turbo
+.DS_Store
+*.log
+coverage
+
+# Local env files
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# Runtime data
+storage/uploads
+packages/database/prisma/dev.db
+packages/database/prisma/*.db
+
+# Existing local services
+openwa-bot/quotations
+openwa-bot/bot.sqlite

@@ -1,0 +1,38 @@
+﻿Testing block contact...
+node.exe : Failure: Error: 
+Evolution API POST /chat/up
+dateBlockStatus/client-dine
+sh-primary failed (500): 
+["Error blocking 
+user","Error: bad-request"]
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
+    + CategoryInfo         
+     : NotSpecifi    ed: 
+(Failure: Erro    r:...: 
+bad-request    "]:String) 
+[], Rem    oteException
+    + FullyQualifiedEr    
+rorId : NativeComm    
+andError
+ 
+    at evolutionRequest (C:
+\Users\Doodle-Admin\Downloa
+ds\Telegram Desktop\testing
+\testing\test-evolution-blo
+ck.ts:24:11)
+    at process.processTicks
+AndRejections (node:interna
+l/process/task_queues:105:5
+)
+    at async main (C:\Users
+\Doodle-Admin\Downloads\Tel
+egram Desktop\testing\testi
+ng\test-evolution-block.ts:
+33:17)

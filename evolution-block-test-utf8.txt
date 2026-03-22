@@ -1,0 +1,44 @@
+﻿Testing block contact...
+node.exe : Failure: 
+Error: Evolution API 
+POST /chat/blockContact
+/client-dinesh-primary 
+failed (404): ["Cannot 
+POST /chat/blockContact
+/client-dinesh-primary"
+]
+At line:1 char:1
++ & "C:\Program 
+Files\nodejs/node.exe" 
+"C:\Program 
+Files\nodejs/node_mo 
+...
++ ~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~
+~~
+    + CategoryInfo     
+         : NotSpecifi  
+  ed: (Failure: Erro   
+ r:...inesh-primary    
+"]:String) [], Rem    
+oteException
+    + FullyQualifiedEr 
+   rorId : NativeComm  
+  andError
+ 
+    at 
+evolutionRequest (C:\Us
+ers\Doodle-Admin\Downlo
+ads\Telegram Desktop\te
+sting\testing\test-evol
+ution-block.ts:24:11)
+    at process.processT
+icksAndRejections (node
+:internal/process/task_
+queues:105:5)
+    at async main (C:\U
+sers\Doodle-Admin\Downl
+oads\Telegram Desktop\t
+esting\testing\test-evo
+lution-block.ts:33:17)

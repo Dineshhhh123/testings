@@ -1,0 +1,55 @@
+--- ALL LEADS ---
+[
+  {
+    "id": "cmn0bjsub0001quo0tv8tacto",
+    "clientId": "cmn03pmi70001qugg8f9andc6",
+    "conversationId": null,
+    "displayName": "Dinesh",
+    "phone": "918754727148",
+    "externalUserJid": "120921146785888@lid",
+    "status": "NEW",
+    "sourceChannel": "whatsapp",
+    "notes": null,
+    "createdAt": "2026-03-21T12:43:23.457Z",
+    "updatedAt": "2026-03-21T13:27:51.124Z"
+  },
+  {
+    "id": "cmn0dev0z0003quh8r6enz4lh",
+    "clientId": "cmn03pmi70001qugg8f9andc6",
+    "conversationId": null,
+    "displayName": null,
+    "phone": "180191578050673",
+    "externalUserJid": "180191578050673@lid",
+    "status": "NEW",
+    "sourceChannel": "whatsapp",
+    "notes": null,
+    "createdAt": "2026-03-21T13:35:32.243Z",
+    "updatedAt": "2026-03-21T13:35:32.243Z"
+  },
+  {
+    "id": "cmn09su490003qurgx12knjeu",
+    "clientId": "cmn03pmi70001qugg8f9andc6",
+    "conversationId": null,
+    "displayName": null,
+    "phone": "155748885602501",
+    "externalUserJid": "155748885602501@lid",
+    "status": "BLOCKED",
+    "sourceChannel": "whatsapp",
+    "notes": null,
+    "createdAt": "2026-03-21T11:54:25.786Z",
+    "updatedAt": "2026-03-21T12:16:28.833Z"
+  },
+  {
+    "id": "cmn095xow0003quwgwum3c9ww",
+    "clientId": "cmn03pmi70001qugg8f9andc6",
+    "conversationId": null,
+    "displayName": "Sathish",
+    "phone": "37026946633758",
+    "externalUserJid": "37026946633758@lid",
+    "status": "BLOCKED",
+    "sourceChannel": "whatsapp",
+    "notes": null,
+    "createdAt": "2026-03-21T11:36:37.328Z",
+    "updatedAt": "2026-03-21T12:51:09.612Z"
+  }
+]

@@ -1,0 +1,25 @@
+{
+  "name": "testing",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "dev:web": "npm run dev --workspace @blink/web",
+    "dev:api": "npm run dev --workspace @blink/api",
+    "dev:n8n": "n8n",
+    "dev:bot": "node openwa-bot/index.js",
+    "db:generate": "npm run db:generate --workspace @blink/database",
+    "db:migrate": "npm run db:migrate --workspace @blink/database",
+    "test": "echo \"Tests are not configured yet\""
+  },
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "n8n": "^2.11.2"
+  }
+}
