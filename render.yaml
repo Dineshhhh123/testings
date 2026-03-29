@@ -4,7 +4,7 @@ services:
     name: abc-platform-api
     runtime: node
     rootDir: .
-    buildCommand: npm install && npx prisma generate --schema packages/database/prisma/schema.prisma && npm run build --workspace @blink/api
+    buildCommand: npm install && cd packages/database && npx prisma generate && cd ../.. && npm run build --workspace @blink/api
     startCommand: node apps/api/dist/server.js
     envVars:
       - key: NODE_ENV
