@@ -1,5 +1,5 @@
 services:
-  # Backend API
+  # Backend API — Node native (no Docker)
   - type: web
     name: abc-platform-api
     runtime: node
@@ -10,25 +10,14 @@ services:
       - key: NODE_ENV
         value: production
       - key: DATABASE_URL
-        sync: false   # Set manually in Render dashboard (Neon URL)
+        sync: false
       - key: JWT_SECRET
-        sync: false   # Set manually
+        sync: false
       - key: GEMINI_API_KEY
-        sync: false   # Set manually
+        sync: false
       - key: EVOLUTION_API_BASE_URL
-        sync: false   # URL of your hosted Evolution API
+        sync: false
       - key: EVOLUTION_API_KEY
-        sync: false   # Set manually
+        sync: false
       - key: ADMIN_REGISTRATION_ID
-        sync: false   # Set manually
-
-  # WhatsApp Bridge (Evolution API Lite)
-  - type: web
-    name: abc-evolution-api
-    runtime: node
-    rootDir: evolution-api-lite
-    buildCommand: npm install
-    startCommand: npm start
-    envVars:
-      - key: NODE_ENV
-        value: production
+        sync: false
