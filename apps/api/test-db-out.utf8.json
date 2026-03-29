@@ -1,0 +1,136 @@
+{
+  "leads": [
+    {
+      "id": "cmnbboveg0003qu206ltai1at",
+      "clientId": "cmn03pmi70001qugg8f9andc6",
+      "conversationId": null,
+      "displayName": "Tony",
+      "businessName": "Stark Tech",
+      "phone": "234144873328889",
+      "externalUserJid": "234144873328889@lid",
+      "status": "NEW",
+      "sourceChannel": "whatsapp",
+      "notes": null,
+      "createdAt": "2026-03-29T05:32:47.992Z",
+      "updatedAt": "2026-03-29T05:33:55.359Z"
+    },
+    {
+      "id": "cmnba99f3002pqulor5ks8yuw",
+      "clientId": "cmn0hi1is003pqus4ax82qrgs",
+      "conversationId": null,
+      "displayName": "https://www.instagram.com/reel/DWAlKuNE1sj/?igsh=MWJpMDI3ejZ6MzBqMw==",
+      "businessName": "https://www.instagram.com/reel/DVK8BBsk16c/?igsh=NGtpYWl4enFydHYy",
+      "phone": "https://www.instagram.com/reel/DVIXJ3mE5Iy/?igsh=MWJvY2w2ODE5eWRwZQ==",
+      "externalUserJid": "115023619829997@lid",
+      "status": "NEW",
+      "sourceChannel": "whatsapp",
+      "notes": null,
+      "createdAt": "2026-03-29T04:52:40.047Z",
+      "updatedAt": "2026-03-29T05:27:51.765Z"
+    },
+    {
+      "id": "cmnba2cw3001lquloy2qn1l8y",
+      "clientId": "cmn0hi1is003pqus4ax82qrgs",
+      "conversationId": null,
+      "displayName": "Greetings from POPULAR MARUTI  POPULAR RETEERI\n\n🎉 MEGA CARNIVAL OFFER FOR PONGAL 🎊 Periodic Maintenance \n\nSERVICE COST 1999/-+TAX only\n\n🚗Engine oil  top up\n🚗 oil filter cleaning\n🚗coolant oil, break oil top up\n🚗Air filter cleaning \n🚗AC Filter Cleaning\n🚗Ac Condenser Cleaning\n🚗Spark plug cleaning  \n🚗Full water wash\n🚗Brake cleaning\n🚗A/C & Electrical checkup\n🚗Battery checkup \n🚗Wiper alignment\n🚗Under body inspection\n🚗All doors lubrication\n\n\nSPECIAL SERVICE CAMPIGN OFFERS FOR OUR VALUED CUSTOMERS !!!🥳   \n\nOFFERS FOR CAMPAIGN 🎉🎊 \n🚗 WATER WASH",
+      "businessName": null,
+      "phone": "48318667292887",
+      "externalUserJid": "48318667292887@lid",
+      "status": "NEW",
+      "sourceChannel": "whatsapp",
+      "notes": null,
+      "createdAt": "2026-03-29T04:47:17.956Z",
+      "updatedAt": "2026-03-29T04:47:17.978Z"
+    },
+    {
+      "id": "cmnba1vlo0015quloxl8syj9i",
+      "clientId": "cmn0hi1is003pqus4ax82qrgs",
+      "conversationId": null,
+      "displayName": "R u interested ha",
+      "businessName": null,
+      "phone": "38427290558697",
+      "externalUserJid": "38427290558697@lid",
+      "status": "NEW",
+      "sourceChannel": "whatsapp",
+      "notes": null,
+      "createdAt": "2026-03-29T04:46:55.548Z",
+      "updatedAt": "2026-03-29T04:46:55.560Z"
+    },
+    {
+      "id": "cmnba1mn3000pqulom1slclnw",
+      "clientId": "cmn0hi1is003pqus4ax82qrgs",
+      "conversationId": null,
+      "displayName": "Please call me when your are available",
+      "businessName": null,
+      "phone": "172576114520257",
+      "externalUserJid": "172576114520257@lid",
+      "status": "NEW",
+      "sourceChannel": "whatsapp",
+      "notes": null,
+      "createdAt": "2026-03-29T04:46:43.936Z",
+      "updatedAt": "2026-03-29T04:46:44.188Z"
+    }
+  ],
+  "convos": [
+    {
+      "id": "cmn1up0a0001nqup0pnogy20g",
+      "clientId": "cmn0hi1is003pqus4ax82qrgs",
+      "leadId": "cmn1up09u001lqup00m29zez3",
+      "channel": "whatsapp",
+      "externalChatId": "918270945621@s.whatsapp.net",
+      "state": "awaiting_product",
+      "summary": "{\"category\":\"TAB\"}",
+      "createdAt": "2026-03-22T14:27:05.257Z",
+      "updatedAt": "2026-03-29T05:40:35.685Z",
+      "lead": null
+    },
+    {
+      "id": "cmnbboven0005qu20yefjntrb",
+      "clientId": "cmn03pmi70001qugg8f9andc6",
+      "leadId": "cmnbboveg0003qu206ltai1at",
+      "channel": "whatsapp",
+      "externalChatId": "234144873328889@lid",
+      "state": "awaiting_product",
+      "summary": "{\"category\":\"TAB\"}",
+      "createdAt": "2026-03-29T05:32:47.999Z",
+      "updatedAt": "2026-03-29T05:33:55.404Z",
+      "lead": null
+    },
+    {
+      "id": "cmnba99f8002rqulooh81wh9k",
+      "clientId": "cmn0hi1is003pqus4ax82qrgs",
+      "leadId": "cmnba99f3002pqulor5ks8yuw",
+      "channel": "whatsapp",
+      "externalChatId": "115023619829997@lid",
+      "state": "awaiting_category",
+      "summary": null,
+      "createdAt": "2026-03-29T04:52:40.052Z",
+      "updatedAt": "2026-03-29T05:27:51.773Z",
+      "lead": null
+    },
+    {
+      "id": "cmnba19by000bqulomajx6nqf",
+      "clientId": "cmn0hi1is003pqus4ax82qrgs",
+      "leadId": "cmnba19bv0009qulovxaqak2i",
+      "channel": "whatsapp",
+      "externalChatId": "185860548997168@lid",
+      "state": "awaiting_category",
+      "summary": null,
+      "createdAt": "2026-03-29T04:46:26.686Z",
+      "updatedAt": "2026-03-29T04:48:17.543Z",
+      "lead": null
+    },
+    {
+      "id": "cmnba1j0n000jqulous9rbm7g",
+      "clientId": "cmn0hi1is003pqus4ax82qrgs",
+      "leadId": "cmnba1j0l000hqulohfaqbst5",
+      "channel": "whatsapp",
+      "externalChatId": "919042522727@s.whatsapp.net",
+      "state": "awaiting_phone",
+      "summary": null,
+      "createdAt": "2026-03-29T04:46:39.239Z",
+      "updatedAt": "2026-03-29T04:47:19.247Z",
+      "lead": null
+    }
+  ]
+}

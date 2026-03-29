@@ -62,7 +62,12 @@ async function ensureDefaultClientForUser(userId: string, fullName: string, emai
 
 export function registerAuthRoutes(router: Router) {
   router.post('/auth/register', async (req: Request, res: Response) => {
-    const { email, password, fullName } = req.body ?? {};
+    const { email, password, fullName, adminId } = req.body ?? {};
+
+    if (env.ADMIN_REGISTRATION_ID && adminId !== env.ADMIN_REGISTRATION_ID) {
+      res.status(403).json({ error: 'Invalid or missing Admin Invite Code. Registration denied.' });
+      return;
+    }
 
     if (!email || !password || !fullName) {
       res.status(400).json({ error: 'email, password and fullName are required' });

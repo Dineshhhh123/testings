@@ -27,3 +27,7 @@ openwa-bot/bot.sqlite
 
 # Local Netlify folder
 .netlify
+
+# Uploaded files (receipts, QR codes) - use cloud storage in production
+uploads/
+apps/api/uploads/

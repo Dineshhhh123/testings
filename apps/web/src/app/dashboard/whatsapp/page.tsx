@@ -3,12 +3,16 @@
 import { useEffect, useState } from 'react';
 import { apiFetch } from '@/lib/api';
 
-type Client = { id: string; name: string; slug: string };
+type Client = { 
+  id: string; 
+  name: string; 
+  slug: string; 
+  businessProfile?: { paymentQrPath?: string | null };
+};
 type WhatsappInstance = {
   id: string; instanceName: string; status: string;
   qrCode?: string | null; lastError?: string | null; createdAt: string;
 };
-type BlockedNumber = { id: string; phone: string; reason?: string | null; createdAt: string };
 
 export default function WhatsappDashboardPage() {
   const [client, setClient] = useState<Client | null>(null);
@@ -17,13 +21,10 @@ export default function WhatsappDashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [companyName, setCompanyName] = useState('');
   const [savingCompany, setSavingCompany] = useState(false);
-
-  // Blocklist state
-  const [blocked, setBlocked] = useState<BlockedNumber[]>([]);
-  const [newPhone, setNewPhone] = useState('');
-  const [newReason, setNewReason] = useState('');
-  const [addingBlock, setAddingBlock] = useState(false);
-  const [blockError, setBlockError] = useState<string | null>(null);
+  const [newInstanceSuffix, setNewInstanceSuffix] = useState('');
+  const [uploadingQr, setUploadingQr] = useState(false);
+  const [qrMessage, setQrMessage] = useState('');
+  const [qrError, setQrError] = useState('');
 
   async function loadDefaultClient() {
     const all = await apiFetch<Client[]>('/api/clients');
@@ -43,12 +44,9 @@ export default function WhatsappDashboardPage() {
       const cli = await loadDefaultClient();
       setClient(cli);
       setCompanyName(cli.name);
-      const [inst, bl] = await Promise.all([
-        apiFetch<WhatsappInstance[]>(`/api/clients/${cli.id}/instances`),
-        apiFetch<BlockedNumber[]>(`/api/clients/${cli.id}/blocklist`)
-      ]);
+      
+      const inst = await apiFetch<WhatsappInstance[]>(`/api/clients/${cli.id}/instances`);
       setInstances(inst);
-      setBlocked(bl);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to load');
     } finally {
@@ -58,15 +56,46 @@ export default function WhatsappDashboardPage() {
 
   async function createInstance() {
     if (!client) return;
+    const suffix = newInstanceSuffix.trim() || 'primary';
+    const instanceName = `client-${client.slug}-${suffix}`.toLowerCase().replace(/[^a-z0-9-]/g, '-');
+    
     try {
       setLoading(true); setError(null);
       await apiFetch(`/api/clients/${client.id}/instances`, {
         method: 'POST',
-        body: JSON.stringify({ instanceName: `client-${client.slug}-primary` })
+        body: JSON.stringify({ instanceName })
       });
+      setNewInstanceSuffix('');
       await loadData();
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to create instance');
+    } finally { setLoading(false); }
+  }
+
+  async function reconnectInstance(instanceName: string) {
+    if (!client) return;
+    try {
+      setLoading(true); setError(null);
+      await apiFetch(`/api/clients/${client.id}/instances`, {
+        method: 'POST',
+        body: JSON.stringify({ instanceName })
+      });
+      await loadData();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to reconnect instance');
+    } finally { setLoading(false); }
+  }
+
+  async function disconnectInstance(instanceName: string) {
+    if (!client) return;
+    try {
+      setLoading(true); setError(null);
+      await apiFetch(`/api/clients/${client.id}/instances/${instanceName}/connection`, {
+        method: 'DELETE'
+      });
+      await loadData();
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : 'Failed to disconnect instance');
     } finally { setLoading(false); }
   }
 
@@ -84,28 +113,69 @@ export default function WhatsappDashboardPage() {
     } finally { setSavingCompany(false); }
   }
 
-  async function addBlockedNumber() {
-    if (!client || !newPhone.trim()) return;
+  async function handlePaymentQrUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    if (!client || !e.target.files?.[0]) return;
     try {
-      setAddingBlock(true); setBlockError(null);
-      const entry = await apiFetch<BlockedNumber>(`/api/clients/${client.id}/blocklist`, {
+      setUploadingQr(true);
+      setQrError('');
+      setQrMessage('');
+
+      const formData = new FormData();
+      formData.append('qrImage', e.target.files[0]);
+
+      const token = window.localStorage.getItem('authToken');
+      const res = await fetch(`/api/clients/${client.id}/payment-qr`, {
         method: 'POST',
-        body: JSON.stringify({ phone: newPhone.trim(), reason: newReason.trim() || null })
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body: formData
       });
-      setBlocked((prev) => [entry, ...prev]);
-      setNewPhone(''); setNewReason('');
-    } catch (e: unknown) {
-      setBlockError(e instanceof Error ? e.message : 'Failed to block number');
-    } finally { setAddingBlock(false); }
+
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || 'Upload failed');
+      }
+
+      setClient({
+        ...client,
+        businessProfile: { ...client.businessProfile, paymentQrPath: 'uploaded' }
+      });
+
+      setQrMessage('Payment QR successfully active!');
+      setTimeout(() => setQrMessage(''), 3000);
+    } catch (err: unknown) {
+      setQrError(err instanceof Error ? err.message : 'Upload failed');
+    } finally {
+      setUploadingQr(false);
+      // Reset input value to allow uploading same file again
+      e.target.value = '';
+    }
   }
 
-  async function unblockNumber(id: string) {
+  async function removePaymentQr() {
     if (!client) return;
     try {
-      await apiFetch(`/api/clients/${client.id}/blocklist/${id}`, { method: 'DELETE' });
-      setBlocked((prev) => prev.filter((b) => b.id !== id));
-    } catch (e: unknown) {
-      setBlockError(e instanceof Error ? e.message : 'Failed to remove');
+      setUploadingQr(true);
+      setQrError('');
+      setQrMessage('');
+      
+      const token = window.localStorage.getItem('authToken');
+      const res = await fetch(`/api/clients/${client.id}/payment-qr`, {
+        method: 'DELETE',
+        headers: token ? { Authorization: `Bearer ${token}` } : {}
+      });
+
+      if (!res.ok) throw new Error('Failed to remove');
+      
+      setClient({
+        ...client,
+        businessProfile: { ...client.businessProfile, paymentQrPath: null }
+      });
+      setQrMessage('Payment QR removed successfully.');
+      setTimeout(() => setQrMessage(''), 3000);
+    } catch (err: unknown) {
+      setQrError(err instanceof Error ? err.message : 'Failed');
+    } finally {
+      setUploadingQr(false);
     }
   }
 
@@ -131,8 +201,17 @@ export default function WhatsappDashboardPage() {
             Create an Evolution instance for your workspace, scan the QR code, and start automating replies.
           </p>
           <div className="cta-row" style={{ marginTop: 20 }}>
-            <button className="button button-primary" disabled={loading} onClick={createInstance}>
-              {loading ? 'Working…' : 'Create / Refresh Instance'}
+            <input 
+              type="text" 
+              placeholder="Instance name (e.g. sales)" 
+              value={newInstanceSuffix}
+              onChange={(e) => setNewInstanceSuffix(e.target.value)}
+              style={{ minWidth: 260 }}
+              disabled={loading}
+              onKeyDown={(e) => e.key === 'Enter' && void createInstance()}
+            />
+            <button className="button button-primary" disabled={loading || !newInstanceSuffix.trim()} onClick={createInstance}>
+              {loading ? 'Working…' : '+ Create New Instance'}
             </button>
             <button className="button button-secondary" disabled={loading} onClick={loadData}>
               Reload Status
@@ -145,14 +224,46 @@ export default function WhatsappDashboardPage() {
         <section className="panel">
           <p className="eyebrow">Business Profile</p>
           {client ? (
-            <div className="cta-row" style={{ marginTop: 12 }}>
-              <input type="text" placeholder="Company name" value={companyName}
-                onChange={(e) => setCompanyName(e.target.value)} style={{ minWidth: 260 }} />
-              <button className="button button-secondary"
-                disabled={savingCompany || !companyName.trim()} onClick={saveCompanyName}>
-                {savingCompany ? 'Saving…' : 'Save company name'}
-              </button>
-            </div>
+            <>
+              <div className="cta-row" style={{ marginTop: 12 }}>
+                <input type="text" placeholder="Company name" value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)} style={{ minWidth: 260 }} />
+                <button className="button button-secondary"
+                  disabled={savingCompany || !companyName.trim()} onClick={saveCompanyName}>
+                  {savingCompany ? 'Saving…' : 'Save company name'}
+                </button>
+              </div>
+
+              <div style={{ marginTop: 24, padding: 16, background: 'rgba(0,0,0,0.02)', borderRadius: 12, border: '1px solid rgba(0,0,0,0.05)' }}>
+                <label style={{ fontSize: 12, fontWeight: 700, color: '#4b5563', display: 'block', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  💳 Payment QR Code
+                </label>
+                <p className="muted" style={{ fontSize: 13, marginBottom: 12 }}>
+                  This image will be automatically sent to the user immediately after their Quotation PDF is delivered.
+                </p>
+
+                {client.businessProfile?.paymentQrPath ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <span style={{ fontSize: 13, color: '#16a34a', fontWeight: 600 }}>✅ QR Code Active</span>
+                    <button className="button button-secondary" style={{ padding: '4px 12px', fontSize: 12, color: '#dc2626', borderColor: 'rgba(220,38,38,0.2)' }} onClick={removePaymentQr} disabled={uploadingQr}>
+                      Remove
+                    </button>
+                  </div>
+                ) : (
+                  <input 
+                    type="file" 
+                    accept="image/png, image/jpeg" 
+                    onChange={handlePaymentQrUpload} 
+                    disabled={uploadingQr} 
+                    style={{ fontSize: 14 }}
+                  />
+                )}
+
+                {uploadingQr && <p style={{ fontSize: 13, color: '#3b82f6', marginTop: 8 }}>Working...</p>}
+                {qrMessage && <p style={{ fontSize: 13, color: '#16a34a', marginTop: 8 }}>{qrMessage}</p>}
+                {qrError && <p style={{ fontSize: 13, color: '#dc2626', marginTop: 8 }}>{qrError}</p>}
+              </div>
+            </>
           ) : (
             <p className="muted" style={{ marginTop: 8 }}>No client loaded yet.</p>
           )}
@@ -183,102 +294,30 @@ export default function WhatsappDashboardPage() {
                           Error: {inst.lastError}
                         </span>
                       )}
+                      <div style={{ marginTop: 8, display: 'flex', gap: 8 }}>
+                        <button className="button button-secondary" style={{ padding: '4px 12px', fontSize: 13 }} disabled={loading} onClick={() => reconnectInstance(inst.instanceName)}>
+                          Reconnect
+                        </button>
+                        <button className="button button-secondary" style={{ padding: '4px 12px', fontSize: 13, color: '#dc2626', borderColor: 'rgba(220,38,38,0.2)' }} disabled={loading} onClick={() => disconnectInstance(inst.instanceName)}>
+                          Disconnect
+                        </button>
+                      </div>
+                      
+                      {inst.qrCode && inst.status.toUpperCase() !== 'CONNECTED' && (
+                        <div style={{ marginTop: 12, padding: '12px', background: 'rgba(0,0,0,0.02)', borderRadius: 8, border: '1px solid rgba(0,0,0,0.05)' }}>
+                          <p className="eyebrow" style={{ marginBottom: 4 }}>Scan QR to Connect: {inst.instanceName}</p>
+                          {inst.qrCode.startsWith('data:image')
+                            ? <img src={inst.qrCode} alt={`QR for ${inst.instanceName}`}
+                                style={{ borderRadius: 8, maxWidth: 220, background: '#fff' }} />
+                            : <p className="muted" style={{ fontSize: 13 }}>{inst.qrCode}</p>
+                          }
+                        </div>
+                      )}
                     </li>
                   );
                 })}
               </ul>
-              {instances[0]?.qrCode && (
-                <div style={{ marginTop: 16 }}>
-                  <p className="eyebrow">QR / Pairing</p>
-                  {instances[0].qrCode.startsWith('data:image')
-                    ? <img src={instances[0].qrCode} alt="WhatsApp QR"
-                        style={{ marginTop: 8, borderRadius: 12, maxWidth: 260, background: '#fff' }} />
-                    : <p className="muted" style={{ marginTop: 8 }}>{instances[0].qrCode}</p>
-                  }
-                </div>
-              )}
             </>
-          )}
-        </section>
-
-        {/* ── Blocklist ── */}
-        <section className="panel">
-          <p className="eyebrow" style={{ marginBottom: 12 }}>
-            🚫 Number Blocklist
-          </p>
-          <p className="muted" style={{ marginBottom: 16, fontSize: 13 }}>
-            Numbers added here will be silently ignored by the chatbot — no replies will be sent.
-          </p>
-
-          {/* Add form */}
-          {client && (
-            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16, alignItems: 'flex-end' }}>
-              <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Phone Number *
-                </label>
-                <input type="text" placeholder="e.g. 919876543210"
-                  value={newPhone} onChange={(e) => setNewPhone(e.target.value)}
-                  style={{ width: 200 }}
-                  onKeyDown={(e) => e.key === 'Enter' && void addBlockedNumber()} />
-              </div>
-              <div>
-                <label style={{ fontSize: 11, fontWeight: 700, color: '#6b7280', display: 'block', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  Reason (optional)
-                </label>
-                <input type="text" placeholder="e.g. Spam"
-                  value={newReason} onChange={(e) => setNewReason(e.target.value)}
-                  style={{ width: 200 }}
-                  onKeyDown={(e) => e.key === 'Enter' && void addBlockedNumber()} />
-              </div>
-              <button className="button button-primary"
-                disabled={addingBlock || !newPhone.trim()} onClick={addBlockedNumber}
-                style={{ alignSelf: 'flex-end' }}>
-                {addingBlock ? 'Adding…' : '+ Block Number'}
-              </button>
-            </div>
-          )}
-
-          {blockError && (
-            <p style={{ color: '#dc2626', fontSize: 13, marginBottom: 10 }}>{blockError}</p>
-          )}
-
-          {/* Blocked list */}
-          {blocked.length === 0 ? (
-            <p className="muted" style={{ fontSize: 13 }}>No numbers blocked yet.</p>
-          ) : (
-            <div style={{ overflowX: 'auto' }}>
-              <table className="table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Phone</th>
-                    <th>Reason</th>
-                    <th>Blocked on</th>
-                    <th style={{ textAlign: 'center' }}>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {blocked.map((b, idx) => (
-                    <tr key={b.id}>
-                      <td style={{ color: '#9ca3af', fontSize: 12 }}>{idx + 1}</td>
-                      <td style={{ fontWeight: 600, fontFamily: 'monospace' }}>{b.phone}</td>
-                      <td style={{ color: '#6b7280', fontSize: 13 }}>{b.reason || '—'}</td>
-                      <td style={{ color: '#9ca3af', fontSize: 12 }}>
-                        {new Date(b.createdAt).toLocaleDateString()}
-                      </td>
-                      <td style={{ textAlign: 'center' }}>
-                        <button onClick={() => void unblockNumber(b.id)}
-                          style={{ background: 'rgba(220,38,38,0.07)', border: '1px solid rgba(220,38,38,0.2)',
-                            borderRadius: 6, color: '#dc2626', cursor: 'pointer', fontSize: 12, padding: '3px 12px' }}>
-                          Unblock
-                        </button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
           )}
         </section>
 

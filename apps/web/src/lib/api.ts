@@ -112,11 +112,12 @@ export async function authLogin(email: string, password: string): Promise<AuthRe
 export async function authRegister(
   email: string,
   password: string,
-  fullName: string
+  fullName: string,
+  adminId?: string
 ): Promise<AuthResponse> {
   return apiFetch<AuthResponse>('/api/auth/register', {
     method: 'POST',
-    body: JSON.stringify({ email, password, fullName }),
+    body: JSON.stringify({ email, password, fullName, adminId }),
     skipAuth: true
   });
 }

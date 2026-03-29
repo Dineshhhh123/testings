@@ -11,6 +11,7 @@ export default function RegisterPage() {
   const [email, setEmail]       = useState('');
   const [password, setPassword] = useState('');
   const [confirm, setConfirm]   = useState('');
+  const [adminId, setAdminId]   = useState('');
   const [loading, setLoading]   = useState(false);
   const [error, setError]       = useState<string | null>(null);
 
@@ -27,7 +28,7 @@ export default function RegisterPage() {
     setLoading(true);
     setError(null);
     try {
-      const data = await authRegister(email, password, fullName);
+      const data = await authRegister(email, password, fullName, adminId);
       setAuthToken(data.token);
       router.push('/dashboard');
     } catch (err: unknown) {
@@ -107,6 +108,20 @@ export default function RegisterPage() {
               disabled={loading}
               value={confirm}
               onChange={e => setConfirm(e.target.value)}
+            />
+          </div>
+
+          <div className="auth-field">
+            <label className="auth-label" htmlFor="reg-admin-id">Admin Invite Code</label>
+            <input
+              id="reg-admin-id"
+              className="auth-input"
+              type="text"
+              placeholder="Required to create account"
+              required
+              disabled={loading}
+              value={adminId}
+              onChange={e => setAdminId(e.target.value)}
             />
           </div>
 

@@ -67,6 +67,12 @@ enum QuotationStatus {
   REJECTED
 }
 
+enum OrderStatus {
+  PAYMENT_PENDING
+  PAYMENT_SUCCESS
+  CANCELLED
+}
+
 model DashboardUser {
   id           String         @id @default(cuid())
   email        String         @unique
@@ -99,6 +105,7 @@ model Client {
   pricingItems          PricingItem[]
   quotationTemplates    QuotationTemplate[]
   quotations            Quotation[]
+  orders                Order[]
   meetings              Meeting[]
   blockedNumbers        BlockedNumber[]
 }
@@ -122,6 +129,7 @@ model BusinessProfile {
   industryType               String?
   salesPrompt                String?
   supportPrompt              String?
+  paymentQrPath              String?
   requiredUserDetails        Json?
   allowedWebsiteUrls         Json?
   createdAt                  DateTime @default(now())
@@ -166,6 +174,7 @@ model Lead {
   clientId           String
   conversationId     String?        @unique
   displayName        String?
+  businessName       String?
   phone              String?
   externalUserJid    String
   status             LeadStatus     @default(NEW)
@@ -177,6 +186,7 @@ model Lead {
   conversation       Conversation?  @relation(fields: [conversationId], references: [id], onDelete: SetNull)
   fieldValues        LeadFieldValue[]
   quotations         Quotation[]
+  orders             Order[]
   meetings           Meeting[]
 
   @@unique([clientId, externalUserJid])
@@ -202,6 +212,8 @@ model Conversation {
   channel            String      @default("whatsapp")
   externalChatId     String
   state              String      @default("awaiting_name")
+  whatsappInstanceName String?
+  isPaused           Boolean     @default(false)
   summary            String?
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
@@ -327,6 +339,23 @@ model Quotation {
   client              Client            @relation(fields: [clientId], references: [id], onDelete: Cascade)
   lead                Lead              @relation(fields: [leadId], references: [id], onDelete: Cascade)
   quotationTemplate   QuotationTemplate? @relation(fields: [quotationTemplateId], references: [id], onDelete: SetNull)
+  order               Order?            
+}
+
+model Order {
+  id              String      @id @default(cuid())
+  clientId        String
+  leadId          String
+  quotationId     String      @unique
+  status          OrderStatus @default(PAYMENT_PENDING)
+  itemDescription Json
+  receiptUrl      String?
+  paymentVerifiedAt DateTime?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  client          Client      @relation(fields: [clientId], references: [id], onDelete: Cascade)
+  lead            Lead        @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  quotation       Quotation   @relation(fields: [quotationId], references: [id], onDelete: Cascade)
 }
 
 model Meeting {

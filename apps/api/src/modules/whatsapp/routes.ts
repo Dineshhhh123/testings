@@ -2,7 +2,7 @@ import type { Request, Response, Router } from 'express';
 import { prisma } from '@blink/database/src/client';
 
 import { requireClientMembership } from '../clients/guard';
-import { connectEvolutionInstance, ensureEvolutionInstance } from './evolutionClient';
+import { connectEvolutionInstance, ensureEvolutionInstance, logoutEvolutionInstance } from './evolutionClient';
 
 function mapEvolutionStatus(status?: string | null): string {
   const raw = (status || '').toLowerCase();
@@ -94,6 +94,34 @@ export function registerWhatsappRoutes(router: Router) {
         }
       });
       res.status(502).json({ error: 'Evolution API error', details: message, instance });
+    }
+  });
+
+  // Disconnect an active instance
+  router.delete('/clients/:clientId/instances/:instanceName/connection', async (req: Request, res: Response) => {
+    const clientId = String(req.params.clientId);
+    const instanceName = String(req.params.instanceName);
+    const membership = await requireClientMembership(req, res, clientId);
+    if (!membership) return;
+
+    try {
+      await logoutEvolutionInstance(instanceName);
+      const instance = await prisma.whatsappInstance.update({
+        where: { instanceName },
+        data: {
+          status: 'DISCONNECTED',
+          qrCode: null,
+          lastError: null
+        }
+      });
+      res.json(instance);
+    } catch (err: any) {
+      const message = String(err?.message || 'Unknown error');
+      const instance = await prisma.whatsappInstance.update({
+        where: { instanceName },
+        data: { status: 'DISCONNECTED', qrCode: null, lastError: message }
+      });
+      res.status(502).json({ error: 'Failed to disconnect', details: message, instance });
     }
   });
 }

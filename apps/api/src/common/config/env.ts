@@ -8,7 +8,8 @@ const envSchema = z.object({
   EVOLUTION_API_KEY: z.string().default('change-me-evolution-local'),
   JWT_SECRET: z.string().default('dev-secret-change-me'),
   GEMINI_API_KEY: z.string().optional(),
-  WHATSAPP_WEBHOOK_BASE_URL: z.string().optional()
+  WHATSAPP_WEBHOOK_BASE_URL: z.string().optional(),
+  ADMIN_REGISTRATION_ID: z.string().optional()
 });
 
 export const env = envSchema.parse(process.env);

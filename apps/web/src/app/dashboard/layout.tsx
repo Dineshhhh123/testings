@@ -15,6 +15,7 @@ const navItems = [
   { href: '/dashboard/leads',          label: '👥 Leads' },
   { href: '/dashboard/conversations',  label: '🗨️ Conversations' },
   { href: '/dashboard/quotations',     label: '📄 Quotations' },
+  { href: '/dashboard/orders',         label: '📦 Orders' },
 ];
 
 function DashboardSidebar() {

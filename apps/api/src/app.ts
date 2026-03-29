@@ -1,6 +1,7 @@
 import cors from 'cors';
 import express from 'express';
 import { Router } from 'express';
+import path from 'node:path';
 
 import { registerAuthRoutes } from './modules/auth/routes';
 import { requireAuth } from './modules/auth/middleware';
@@ -14,6 +15,7 @@ import { registerConversationRoutes } from './modules/conversations/routes';
 import { registerPricingRoutes } from './modules/pricing/routes';
 import { registerQuotationRoutes } from './modules/quotations/routes';
 import { registerBlocklistRoutes } from './modules/whatsapp/blocklistRoutes';
+import { registerOrderRoutes } from './modules/orders/routes';
 
 const modules = [
   'auth',
@@ -48,6 +50,8 @@ export function createApp() {
   app.options('*', cors(corsOptions));
 
   app.use(express.json({ limit: '25mb' }));
+
+  app.use('/api/receipts', express.static(path.join(process.cwd(), 'uploads', 'receipts')));
 
 
   // ── Request logger (dev) ───────────────────────────────────────────────────
@@ -85,6 +89,7 @@ export function createApp() {
   registerPricingRoutes(apiRouter);
   registerQuotationRoutes(apiRouter);
   registerBlocklistRoutes(apiRouter);
+  registerOrderRoutes(apiRouter);
   app.use('/api', apiRouter);
 
   return app;

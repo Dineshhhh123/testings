@@ -2,7 +2,7 @@ import fs from 'node:fs';
 
 import { env } from '../../common/config/env';
 
-type EvolutionMethod = 'GET' | 'POST';
+type EvolutionMethod = 'GET' | 'POST' | 'DELETE';
 
 async function evolutionRequest<T = any>(path: string, method: EvolutionMethod, body?: unknown): Promise<T> {
   const url = `${env.EVOLUTION_API_BASE_URL.replace(/\/+$/, '')}${path}`;
@@ -113,3 +113,61 @@ export async function connectEvolutionInstance(instanceName: string): Promise<Ev
   return data;
 }
 
+export async function logoutEvolutionInstance(instanceName: string) {
+  return evolutionRequest(`/instance/logout/${encodeURIComponent(instanceName)}`, 'DELETE');
+}
+
+export async function sendImage(
+  instanceName: string,
+  number: string,
+  filePath: string,
+  fileName: string,
+  caption: string = ''
+) {
+  const base64 = fs.readFileSync(filePath, { encoding: 'base64' });
+  const mimetype = filePath.toLowerCase().endsWith('.png') ? 'image/png' : 'image/jpeg';
+  return evolutionRequest(`/message/sendMedia/${encodeURIComponent(instanceName)}`, 'POST', {
+    number,
+    mediatype: 'image',
+    mimetype,
+    caption,
+    media: base64,
+    fileName,
+    delay: 500
+  });
+}
+
+export async function getMediaBase64(instanceName: string, message: any): Promise<string | null> {
+  try {
+    const data = await evolutionRequest<{ base64?: string }>(
+      `/chat/getBase64FromMediaMessage/${encodeURIComponent(instanceName)}`,
+      'POST',
+      { message }
+    );
+    return data?.base64 || null;
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error('Failed to get media base64 from message', err);
+    return null;
+  }
+}
+
+export async function sendButtons(
+  instanceName: string,
+  number: string,
+  text: string,
+  buttons: { id: string; text: string }[],
+  footer?: string
+) {
+  return evolutionRequest(`/message/sendButtons/${encodeURIComponent(instanceName)}`, 'POST', {
+    number,
+    buttons: buttons.map(b => ({
+      buttonId: b.id,
+      buttonText: { displayText: b.text },
+      type: 1
+    })),
+    text,
+    footer,
+    delay: 500
+  });
+}

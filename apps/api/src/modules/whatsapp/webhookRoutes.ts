@@ -1,7 +1,9 @@
 import type { Request, Response, Router } from 'express';
+import fs from 'node:fs';
+import path from 'node:path';
 
 import { prisma } from '@blink/database/src/client';
-import { sendPdf, sendText } from './evolutionClient';
+import { sendPdf, sendText, sendImage, getMediaBase64, sendButtons } from './evolutionClient';
 import { env } from '../../common/config/env';
 import { generateAiReplyForConversation } from '../ai/service';
 import { generateQuotationPdfForQuote } from '../quotations/pdf';
@@ -28,6 +30,7 @@ type ConversationCart = {
 
   // Fields for the currently edited item
   category?: string;
+  productNameGroup?: string;
   productId?: string;
   productName?: string;
   packQuantity?: number | null;
@@ -155,8 +158,9 @@ export function registerWhatsappWebhookRoutes(router: Router) {
 
       const isGroupMessage = String(remoteJid).endsWith('@g.us');
       const isDirectMessage = /@(s\.whatsapp\.net|c\.us|lid)$/i.test(String(remoteJid || ''));
+      const hasMedia = !!(rawMessage.imageMessage || rawMessage.documentMessage || rawMessage.videoMessage || rawMessage.audioMessage);
 
-      if (!remoteJid || !messageId || !text || isGroupMessage || !isDirectMessage) {
+      if (!remoteJid || !messageId || (!text && !hasMedia) || isGroupMessage || !isDirectMessage) {
         res.status(200).json({ ignored: true });
         return;
       }
@@ -206,7 +210,7 @@ export function registerWhatsappWebhookRoutes(router: Router) {
       }
 
       // Upsert lead for this external user
-      const lead = await prisma.lead.upsert({
+      let lead = await prisma.lead.upsert({
         where: {
           clientId_externalUserJid: {
             clientId,
@@ -222,14 +226,51 @@ export function registerWhatsappWebhookRoutes(router: Router) {
           sourceChannel: 'whatsapp'
         },
         update: {
-          // Never overwrite displayName automatically; it is set only when user explicitly gives their name
-          phone: phone ?? undefined
+          // Never overwrite displayName or phone automatically on every message
         }
       });
 
       if (lead.status === 'BLOCKED') {
         res.status(200).json({ ignored: true, blocked: true });
         return;
+      }
+
+      // ─────────────────────────────────────────────────────────────────
+      // RECEIPT UPLOAD CHECK
+      // Check if this is an image upload and the lead has a pending order
+      // ─────────────────────────────────────────────────────────────────
+      if (rawMessage.imageMessage) {
+        try {
+          // @ts-ignore Schema update but missing types
+          const pendingOrder = await prisma.order.findFirst({
+            where: { leadId: lead.id, status: 'PAYMENT_PENDING' },
+            orderBy: { createdAt: 'desc' }
+          });
+
+          if (pendingOrder) {
+            const base64 = await getMediaBase64(instance.instanceName, payload.data);
+            if (base64) {
+              const uploadDir = path.join(process.cwd(), 'uploads', 'receipts');
+              fs.mkdirSync(uploadDir, { recursive: true });
+              const fileName = `receipt-${pendingOrder.id}-${Date.now()}.jpg`;
+              const filePath = path.join(uploadDir, fileName);
+              fs.writeFileSync(filePath, Buffer.from(base64, 'base64'));
+
+              // @ts-ignore
+              await prisma.order.update({
+                where: { id: pendingOrder.id },
+                data: { receiptUrl: `/receipts/${fileName}` }
+              });
+
+              await sendText(instance.instanceName, remoteJid, 'Thank you! We have received your payment receipt. Our team will verify it shortly.');
+              res.status(200).json({ success: true, receipt: true });
+              return; // Halt AI text processing
+            }
+          }
+        } catch (err) {
+          // eslint-disable-next-line no-console
+          console.error("Failed to process potential receipt upload:", err);
+        }
       }
 
       // Upsert conversation for this chat
@@ -240,17 +281,29 @@ export function registerWhatsappWebhookRoutes(router: Router) {
             externalChatId
           }
         },
+        // @ts-ignore - Prisma client needs regeneration
         create: {
           clientId,
           externalChatId,
           channel: 'whatsapp',
+          whatsappInstanceName: instanceName,
           state: 'awaiting_name',
           leadId: lead.id
         },
+        // @ts-ignore - Prisma client needs regeneration
         update: {
+          whatsappInstanceName: instanceName,
           leadId: lead.id
         }
       });
+
+      // Fix Prisma 1-to-1 relation which requires Lead to have conversationId
+      if (lead.conversationId !== conversation.id) {
+        lead = await prisma.lead.update({
+          where: { id: lead.id },
+          data: { conversationId: conversation.id }
+        });
+      }
 
       // Avoid duplicate messages by externalMessageId
       if (messageId) {
@@ -278,6 +331,13 @@ export function registerWhatsappWebhookRoutes(router: Router) {
           sentAt: new Date()
         }
       });
+
+      // @ts-ignore - Prisma client needs regeneration
+      if (conversation.isPaused) {
+        // Automation is paused for this customer. We log the incoming message but don't send any reply.
+        res.status(200).json({ paused: true });
+        return;
+      }
       const trimmed = text.trim();
       const lowerTrimmed = trimmed.toLowerCase();
       let state = conversation.state || 'awaiting_name';
@@ -299,9 +359,10 @@ export function registerWhatsappWebhookRoutes(router: Router) {
           }
         }
       } else {
-        const isRestartCommand = ['hi', 'hello', 'hey', 'start', 'menu'].includes(lowerTrimmed);
-        const isBackCommand = ['back', 'b'].includes(lowerTrimmed);
-        const isCancelCommand = ['cancel', 'stop'].includes(lowerTrimmed);
+        const cleanInput = lowerTrimmed.replace(/[^\w\s]/g, '').trim();
+        const isRestartCommand = ['hi', 'hello', 'hey', 'start', 'menu'].includes(cleanInput);
+        const isBackCommand = ['back', 'b'].includes(cleanInput);
+        const isCancelCommand = ['cancel', 'stop'].includes(cleanInput);
 
         // Global "cancel" – reset the flow completely
         if (isCancelCommand) {
@@ -318,6 +379,9 @@ export function registerWhatsappWebhookRoutes(router: Router) {
         // Allow user to restart flow from any state with simple commands like "hi" or "menu"
         else if (isRestartCommand) {
           const existingName = lead.displayName || displayName || null;
+          // @ts-ignore - businessName needs regeneration
+          const existingBusinessName = lead.businessName || null;
+          const existingPhone = lead.phone || null;
           const categories = await getCategoriesForClient(clientId);
 
           if (!categories.length) {
@@ -325,7 +389,7 @@ export function registerWhatsappWebhookRoutes(router: Router) {
               `Hi ${existingName || 'there'}, I don’t have any pricing set up yet. ` +
               `Please ask your account owner to upload a pricing sheet in the dashboard.`;
             state = 'awaiting_name';
-          } else if (existingName) {
+          } else if (existingName && existingBusinessName && existingPhone) {
             const lines = categories.map((c, idx) => `${idx + 1}. ${c.category}`);
             replyText =
               `Welcome back, ${existingName}!\n\n` +
@@ -333,6 +397,12 @@ export function registerWhatsappWebhookRoutes(router: Router) {
               lines.join('\n') +
               `\n\nPlease reply with the number of the category you’re interested in.`;
             state = 'awaiting_category';
+          } else if (existingName && !existingBusinessName) {
+            replyText = `Welcome back, ${existingName}!\nPlease tell me your Business Name to continue.`;
+            state = 'awaiting_business_name';
+          } else if (existingName && existingBusinessName && !existingPhone) {
+            replyText = `Welcome back, ${existingName}!\nPlease share a contact phone number to continue.`;
+            state = 'awaiting_phone';
           } else {
             replyText =
               'Hi! I am your ABC WhatsApp assistant. Please tell me your name so I can help you with products, pricing, and quotations.';
@@ -346,23 +416,44 @@ export function registerWhatsappWebhookRoutes(router: Router) {
         } else if (isBackCommand) {
           // Step back one level depending on current state
           switch (state) {
+            case 'awaiting_business_name': {
+              state = 'awaiting_name';
+              replyText = 'No problem, let’s start again. Please tell me your name.';
+              await prisma.conversation.update({
+                where: { id: conversation.id },
+                data: { state, summary: null }
+              });
+              break;
+            }
+
+            case 'awaiting_phone': {
+              const name = lead.displayName || 'there';
+              state = 'awaiting_business_name';
+              replyText = `Let’s go back. Please tell me your Business Name, ${name}.`;
+              await prisma.conversation.update({
+                where: { id: conversation.id },
+                data: { state, summary: null }
+              });
+              break;
+            }
+
             case 'awaiting_category': {
               const existingName = lead.displayName || displayName || null;
               if (existingName) {
-                const categories = await getCategoriesForClient(clientId);
-                if (!categories.length) {
-                  replyText =
-                    `Hi ${existingName}, I don’t have any pricing set up yet. ` +
-                    `Please ask your account owner to upload a pricing sheet in the dashboard.`;
-                  state = 'awaiting_name';
+                // @ts-ignore
+                const existingBusinessName = lead.businessName || null;
+                const existingPhone = lead.phone || null;
+                
+                if (!existingBusinessName) {
+                   state = 'awaiting_business_name';
+                   replyText = `Please tell me your Business Name, ${existingName}.`;
+                } else if (!existingPhone) {
+                   state = 'awaiting_phone';
+                   replyText = `Please share a contact phone number.`;
                 } else {
-                  const lines = categories.map((c, idx) => `${idx + 1}. ${c.category}`);
-                  replyText =
-                    `Welcome back, ${existingName}!\n\n` +
-                    `Here are our main product categories:\n` +
-                    lines.join('\n') +
-                    `\n\nPlease reply with the number of the category you’re interested in.`;
-                  state = 'awaiting_category';
+                   // actually if they go "back" from awaiting_category, they probably want to change phone?
+                   state = 'awaiting_phone';
+                   replyText = `Let’s change your phone number. Please enter a contact phone number.`;
                 }
               } else {
                 replyText =
@@ -428,12 +519,13 @@ export function registerWhatsappWebhookRoutes(router: Router) {
                 break;
               }
 
-              const lines = products.slice(0, 10).map((p, i) => {
-                const pack = p.packQuantity ? ` (pack of ${p.packQuantity})` : '';
+              const lines = products.slice(0, 15).map((p, i) => {
+                const variantText = p.variant ? ` ${p.variant}` : '';
+                const pack = p.packQuantity ? ` pack of ${p.packQuantity}` : '';
                 const rate = p.rate ? ` – ₹${Number(p.rate).toFixed(2)}` : '';
                 const discountNum = p.discount ? Number(p.discount) : 0;
                 const discount = discountNum > 0 ? ` - Discount: ${discountNum}%` : ' - Discount: nil';
-                return `${i + 1}. ${p.product}${pack}${rate}${discount}`;
+                return `${i + 1}. ${p.product}${variantText}${pack}${rate}${discount}`;
               });
 
               replyText =
@@ -527,7 +619,8 @@ export function registerWhatsappWebhookRoutes(router: Router) {
               replyText = 'Sorry, I am having trouble answering questions right now. Let’s continue with your order.';
             }
           } else {
-            switch (state) {
+            const effectiveState = state.endsWith('_retry') ? state.replace('_retry', '') : state;
+            switch (effectiveState) {
               case 'awaiting_name': {
                 const existingName = lead.displayName || null;
                 const name = trimmed || existingName || 'there';
@@ -537,17 +630,57 @@ export function registerWhatsappWebhookRoutes(router: Router) {
               data: { displayName: name }
             });
 
+            replyText =
+              `Nice to meet you, ${name}!\n\n` +
+              `Please tell me your Business Name.`;
+            state = 'awaiting_business_name';
+
+            await prisma.conversation.update({
+              where: { id: conversation.id },
+              data: { state }
+            });
+            break;
+          }
+
+          case 'awaiting_business_name': {
+            const businessName = trimmed;
+            
+            // @ts-ignore - Prisma client needs to be regenerated by restarting the dev server
+            await prisma.lead.update({
+              where: { id: lead.id },
+              data: { businessName }
+            });
+
+            replyText =
+              `Thank you!\n\n` +
+              `Finally, please share a contact phone number.`;
+            state = 'awaiting_phone';
+
+            await prisma.conversation.update({
+              where: { id: conversation.id },
+              data: { state }
+            });
+            break;
+          }
+
+          case 'awaiting_phone': {
+            const phoneInput = trimmed;
+            await prisma.lead.update({
+              where: { id: lead.id },
+              data: { phone: phoneInput }
+            });
+
             const categories = await getCategoriesForClient(clientId);
 
             if (!categories.length) {
               replyText =
-                `Hi ${name}, I don’t have any pricing set up yet. ` +
+                `Thank you. I don’t have any pricing set up yet. ` +
                 `Please ask your account owner to upload a pricing sheet in the dashboard.`;
               state = 'awaiting_name';
             } else {
               const lines = categories.map((c, idx) => `${idx + 1}. ${c.category}`);
               replyText =
-                `Nice to meet you, ${name}!\n\n` +
+                `Thank you!\n\n` +
                 `Here are our main product categories:\n` +
                 lines.join('\n') +
                 `\n\nPlease reply with the number of the category you’re interested in.`;
@@ -566,10 +699,28 @@ export function registerWhatsappWebhookRoutes(router: Router) {
             const idx = Number(trimmed);
 
             if (!Number.isInteger(idx) || idx < 1 || idx > categories.length) {
-              replyText =
-                `Please reply with a number between 1 and ${categories.length} to choose a category.\n` +
-                'You can also send "hi" or "menu" to restart, or "cancel" to stop.';
-              break;
+              if (state === 'awaiting_category') {
+                replyText =
+                  `Please reply with a number between 1 and ${categories.length} to choose a category.\n` +
+                  'You can also send "hi" or "menu" to restart, or "cancel" to stop.';
+                await prisma.conversation.update({
+                  where: { id: conversation.id },
+                  data: { state: 'awaiting_category_retry' }
+                });
+                break;
+              } else {
+                state = 'awaiting_name';
+                cart = {};
+                replyText =
+                  `I didn't understand that. Let's start over.\n\n` +
+                  `Hi! I am your ABC WhatsApp assistant. Please tell me your name so I can help you with products, pricing, and quotations.`;
+                
+                await prisma.conversation.update({
+                  where: { id: conversation.id },
+                  data: { state, summary: null }
+                });
+                break;
+              }
             }
 
             const chosenCategory = categories[idx - 1].category;
@@ -583,12 +734,13 @@ export function registerWhatsappWebhookRoutes(router: Router) {
                 `Please choose another category.`;
               state = 'awaiting_category';
             } else {
-              const lines = products.slice(0, 10).map((p, i) => {
-                const pack = p.packQuantity ? ` (pack of ${p.packQuantity})` : '';
+              const lines = products.slice(0, 20).map((p, i) => {
+                const variantText = p.variant ? ` ${p.variant}` : '';
+                const pack = p.packQuantity ? ` pack of ${p.packQuantity}` : '';
                 const rate = p.rate ? ` – ₹${Number(p.rate).toFixed(2)}` : '';
                 const discountNum = p.discount ? Number(p.discount) : 0;
                 const discount = discountNum > 0 ? ` - Discount: ${discountNum}%` : ' - Discount: nil';
-                return `${i + 1}. ${p.product}${pack}${rate}${discount}`;
+                return `${i + 1}. ${p.product}${variantText}${pack}${rate}${discount}`;
               });
 
               replyText =
@@ -609,8 +761,7 @@ export function registerWhatsappWebhookRoutes(router: Router) {
           case 'awaiting_product': {
             if (!cart.category) {
               state = 'awaiting_category';
-              replyText =
-                'Let’s pick a category first. Please send a category number.\nYou can also send "hi" or "menu" to restart, or "cancel" to stop.';
+              replyText = 'Let’s pick a category first. Please send a category number.';
               await prisma.conversation.update({
                 where: { id: conversation.id },
                 data: { state, summary: stringifyCart(cart) }
@@ -628,13 +779,14 @@ export function registerWhatsappWebhookRoutes(router: Router) {
               if (env.GEMINI_API_KEY) {
                 try {
                   const listText = products
-                    .slice(0, 10)
+                    .slice(0, 20)
                     .map((p, i) => {
-                      const pack = p.packQuantity ? ` (pack of ${p.packQuantity})` : '';
+                      const variantText = p.variant ? ` ${p.variant}` : '';
+                      const pack = p.packQuantity ? ` pack of ${p.packQuantity}` : '';
                       const rate = p.rate ? ` – ₹${Number(p.rate).toFixed(2)}` : '';
                       const discountNum = p.discount ? Number(p.discount) : 0;
                       const discount = discountNum > 0 ? ` - Discount: ${discountNum}%` : ' - Discount: nil';
-                      return `${i + 1}. ${p.product}${pack}${rate}${discount}`;
+                      return `${i + 1}. ${p.product}${variantText}${pack}${rate}${discount}`;
                     })
                     .join('\n');
 
@@ -642,7 +794,7 @@ export function registerWhatsappWebhookRoutes(router: Router) {
                     `Customer is choosing a product in category "${cart.category}".\n` +
                     `Available options:\n${listText}\n\n` +
                     `Customer message:\n"${text}"\n\n` +
-                    `Briefly (2-3 short lines), compare or recommend options based on their message.\n` +
+                    `Briefly (2-3 short lines), compare options based on their message.\n` +
                     `End your reply with a clear instruction like: "To order now, reply with the product number (1, 2, 3, ...).".`;
 
                   replyText = await generateAiReplyForConversation(
@@ -651,19 +803,10 @@ export function registerWhatsappWebhookRoutes(router: Router) {
                     questionWithContext
                   );
                 } catch (aiErr: any) {
-                  // eslint-disable-next-line no-console
-                  console.error(
-                    'AI reply in awaiting_product failed, falling back to numeric prompt',
-                    aiErr
-                  );
-                  replyText =
-                    `Please reply with a number between 1 and ${products.length} to choose a product.\n` +
-                    'You can also send "back" to change category, "hi" or "menu" to restart, or "cancel" to stop.';
+                  replyText = `Please reply with a number between 1 and ${products.length} to choose a product.`;
                 }
               } else {
-                replyText =
-                  `Please reply with a number between 1 and ${products.length} to choose a product.\n` +
-                  'You can also send "back" to change category, "hi" or "menu" to restart, or "cancel" to stop.';
+                replyText = `Please reply with a number between 1 and ${products.length} to choose a product.`;
               }
 
               break;
@@ -675,26 +818,28 @@ export function registerWhatsappWebhookRoutes(router: Router) {
 
             const rateNum = chosen.rate ? Number(chosen.rate) : 0;
             const discountedRate = hasDiscount ? rateNum - (rateNum * discountNum / 100) : rateNum;
+            
+            const variantText = chosen.variant ? ` ${chosen.variant}` : '';
+            const packTextSuffix = chosen.packQuantity ? ` pack of ${chosen.packQuantity}` : '';
+
             cart = {
               ...cart,
               productId: chosen.id,
-              productName: chosen.product,
+              productName: `${chosen.product}${variantText}${packTextSuffix}`,
               packQuantity: chosen.packQuantity ?? null,
               rate: discountedRate,
               hasDiscount: hasDiscount
             };
 
-            const packText = chosen.packQuantity
-              ? `One pack contains ${chosen.packQuantity} units. `
-              : '';
             const rateText = hasDiscount && rateNum
               ? `Original: \u20B9${rateNum.toFixed(2)} | After ${discountNum}% discount: \u20B9${discountedRate.toFixed(2)}.`
               : (rateNum ? `Price: \u20B9${rateNum.toFixed(2)}.` : '');
 
             replyText =
-              `You chose "${chosen.product}". \uD83C\uDF89\n\n` +
-              `${packText}${rateText}\n` +
-              `How many packs would you like? Please reply with a number (e.g., 1, 2, 5).`;
+              `You chose "${cart.productName}". \uD83C\uDF89\n\n` +
+              `${rateText}\n` +
+              `How many packs would you like?\n` +
+              `You can reply with a number like "1", or text like "three packs" or "5".`;
 
             state = 'awaiting_quantity';
 
@@ -706,11 +851,24 @@ export function registerWhatsappWebhookRoutes(router: Router) {
           }
 
           case 'awaiting_quantity': {
-            const qty = Number(trimmed);
+            let qty = parseInt(trimmed.replace(/\D/g, ''), 10);
+            
+            if (Number.isNaN(qty)) {
+              const wordMap: Record<string, number> = {
+                one: 1, two: 2, three: 3, four: 4, five: 5,
+                six: 6, seven: 7, eight: 8, nine: 9, ten: 10
+              };
+              for (const [word, val] of Object.entries(wordMap)) {
+                if (trimmed.toLowerCase().includes(word)) {
+                  qty = val;
+                  break;
+                }
+              }
+            }
+            
             if (!cart.productId || !cart.productName) {
               state = 'awaiting_category';
-              replyText =
-                'Let’s start again. Please choose a category.\nYou can also send "hi" or "menu" to restart, or "cancel" to stop.';
+              replyText = 'Let’s start again. Please choose a category.';
               await prisma.conversation.update({
                 where: { id: conversation.id },
                 data: { state, summary: stringifyCart(cart) }
@@ -729,10 +887,26 @@ export function registerWhatsappWebhookRoutes(router: Router) {
             }
 
             if (!Number.isFinite(qty) || qty <= 0) {
-              replyText =
-                'Please reply with a positive number for the quantity (e.g., 1, 2, 5).\n' +
-                'You can also send "back" to change the product, "hi" or "menu" to restart, or "cancel" to stop.';
-              break;
+              if (state === 'awaiting_quantity') {
+                replyText = 'Please reply with a positive number for the quantity (e.g., 1, 2, 5).';
+                await prisma.conversation.update({
+                  where: { id: conversation.id },
+                  data: { state: 'awaiting_quantity_retry' }
+                });
+                break;
+              } else {
+                state = 'awaiting_name';
+                cart = {};
+                replyText =
+                  `I didn't understand that quantity. Let's start over.\n\n` +
+                  `Hi! I am your ABC WhatsApp assistant. Please tell me your name so I can help you with products, pricing, and quotations.`;
+                
+                await prisma.conversation.update({
+                  where: { id: conversation.id },
+                  data: { state, summary: null }
+                });
+                break;
+              }
             }
 
             const rate = cart.rate ?? 0;
@@ -759,6 +933,7 @@ export function registerWhatsappWebhookRoutes(router: Router) {
                       typeof item.total === 'number'
                         ? item.total
                         : itemRate * itemQty;
+                    // Note: variant doesn't matter here as much but we could put it in productName if we wanted
                     return `${index + 1}. ${item.productName || ''} – ${itemQty} × ₹${itemRate.toFixed(
                       2
                     )} = ₹${itemTotal.toFixed(2)}`;
@@ -860,15 +1035,37 @@ export function registerWhatsappWebhookRoutes(router: Router) {
                   }
                 });
                 quotationId = quotation.id;
+
+                // Create associated Order
+                // @ts-ignore Order model recently pushed
+                await prisma.order.create({
+                  data: {
+                    clientId,
+                    leadId: lead.id,
+                    quotationId: quotation.id,
+                    status: 'PAYMENT_PENDING',
+                    itemDescription: {
+                      items: finalItems,
+                      grandTotal
+                    } as any
+                  }
+                });
               } catch (e) {
                 // eslint-disable-next-line no-console
-                console.error('Failed to create quotation record', e);
+                console.error('Failed to create quotation or order record', e);
               }
 
               if (quotationId) {
                 try {
                   const { filePath, fileName } = await generateQuotationPdfForQuote(quotationId);
                   await sendPdf(instance.instanceName, remoteJid, filePath, fileName);
+
+                  const profile = await prisma.businessProfile.findUnique({ where: { clientId } });
+                  // @ts-ignore schema was updated but generate skipped due to file lock
+                  const paymentQr = profile?.paymentQrPath;
+                  if (paymentQr) {
+                    await sendImage(instance.instanceName, remoteJid, paymentQr, 'payment-qr.png', 'Scan to Pay');
+                  }
                 } catch (e) {
                   // eslint-disable-next-line no-console
                   console.error('Failed to generate or send quotation PDF', e);
@@ -902,10 +1099,9 @@ export function registerWhatsappWebhookRoutes(router: Router) {
                 const itemsCountText = existingItems.length
                   ? `You still have ${existingItems.length} item(s) in your quotation.\n\n`
                   : '';
-                replyText =
-                  `${itemsCountText}No problem. Let’s pick a category again. ` +
-                  `Please reply with the number of the category you’re interested in.\n` +
-                  'You can also send "hi" or "menu" to restart, "back" to adjust the previous step, or "cancel" to stop.';
+                  replyText =
+                    `${itemsCountText}No problem. Let’s pick a category again. ` +
+                    `Please reply with the number of the category you’re interested in.`;
               }
 
               await prisma.conversation.update({
@@ -913,9 +1109,7 @@ export function registerWhatsappWebhookRoutes(router: Router) {
                 data: { state, summary: stringifyCart(cart) }
               });
             } else {
-              replyText =
-                'Please reply "yes" to confirm the quotation, "more" to add this product and choose another one, or "no" to change this product.\n' +
-                'You can also send "back" to adjust the quantity, "hi" or "menu" to restart, or "cancel" to stop.';
+              replyText = 'Please reply "yes" to confirm the quotation, "more" to add this product and choose another one, or "no" to change this product.';
             }
 
             break;
@@ -947,7 +1141,30 @@ export function registerWhatsappWebhookRoutes(router: Router) {
       });
 
       try {
-        await sendText(instance.instanceName, remoteJid, replyText);
+        if (replyText) {
+          // Define standard buttons
+          const btnBack = { id: 'back', text: '↩️ Back' };
+          const btnCancel = { id: 'cancel', text: '❌ Cancel' };
+          const btnMenu = { id: 'menu', text: '🏠 Menu' };
+
+          let buttons: { id: string; text: string }[] = [];
+          
+          // Decide which buttons to show based on state
+          if (state === 'awaiting_name') {
+            buttons = [btnMenu];
+          } else {
+            buttons = [btnBack, btnCancel, btnMenu];
+          }
+
+          try {
+            // Send as button message if possible
+            await sendButtons(instance.instanceName, remoteJid, replyText, buttons, 'ABC Automations');
+          } catch (buttonErr) {
+            // Fallback to text + footer if buttons fail
+            const footer = `\n\n${buttons.map(b => b.text).join(' | ')}`;
+            await sendText(instance.instanceName, remoteJid, replyText + footer);
+          }
+        }
       } catch (sendErr: any) {
         // eslint-disable-next-line no-console
         console.error('Failed to send Evolution reply', sendErr);
